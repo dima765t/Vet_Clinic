@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0A0E27">
+  <meta name="description" content="Find available veterinary clinics in Tel Aviv in real-time | מצא מרפאות וטרינריות זמינות בתל אביב בזמן אמת">
+  <title>Tel Aviv Vet Clinics - Live Status | מרפאות וטרינריות תל אביב</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Heebo:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --primary: #00B4D8;
+      --primary-dark: #0096C7;
+      --secondary: #FF6B9D;
+      --success: #06D6A0;
+      --warning: #FFD60A;
+      --bg-dark: #0A0E27;
+      --bg-card: #151938;
+      --bg-hover: #1E2442;
+      --text-primary: #FFFFFF;
+      --text-secondary: #94A3B8;
+      --border: #2D3561;
+      --font-en: 'Outfit', sans-serif;
+      --font-he: 'Heebo', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-en);
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Hebrew mode font */
+    body.lang-he {
+      font-family: var(--font-he);
+    }
+
+    #root {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: linear-gradient(135deg, var(--bg-card) 0%, #1a1f3a 100%);
+      border-bottom: 2px solid var(--border);
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0, 180, 216, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .lang-he .logo {
+      flex-direction: row-reverse;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .lang-he .header-actions {
+      flex-direction: row-reverse;
+    }
+
+    .btn {
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
+    }
+
+    .btn-primary:active { transform: scale(0.95); }
+
+    .btn-secondary {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:active { background: var(--border); }
+
+    /* Language toggle button */
+    .btn-lang {
+      background: linear-gradient(135deg, #2D3561, #1E2442);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.7rem;
+      font-size: 0.8rem;
+      gap: 0.3rem;
+      letter-spacing: 0;
+    }
+
+    .btn-lang:hover {
+      border-color: var(--primary);
+    }
+
+    .btn-lang .lang-flag {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    /* Mobile menu button */
+    .mobile-menu-btn {
+      display: none;
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.6rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.3rem;
+      touch-action: manipulation;
+    }
+
+    /* ===== MAIN CONTAINER ===== */
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .lang-he .container {
+      flex-direction: row-reverse;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 380px;
+      background: var(--bg-card);
+      border-right: 2px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: transform 0.3s ease;
+    }
+
+    .lang-he .sidebar {
+      border-right: none;
+      border-left: 2px solid var(--border);
+    }
+
+    .sidebar.mobile-hidden {
+      transform: translateX(-100%);
+    }
+
+    .lang-he .sidebar.mobile-hidden {
+      transform: translateX(100%);
+    }
+
+    .filters {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 180, 216, 0.05);
+      flex-shrink: 0;
+    }
+
+    .filter-group {
+      margin-bottom: 1rem;
+    }
+
+    .filter-group:last-child { margin-bottom: 0; }
+
+    .filter-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .lang-he .filter-label {
+      text-align: right;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394A3B8' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2.5rem;
+    }
+
+    .lang-he .filter-select {
+      text-align: right;
+      direction: rtl;
+      background-position: left 0.75rem center;
+      padding-right: 0.75rem;
+      padding-left: 2.5rem;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.1);
+    }
+
+    .clinics-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ===== CLINIC CARDS ===== */
+    .clinic-card {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    .clinic-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+      transform: scaleY(0);
+      transition: transform 0.3s ease;
+    }
+
+    .lang-he .clinic-card::before {
+      left: auto;
+      right: 0;
+    }
+
+    .clinic-card:active { transform: scale(0.98); }
+
+    .clinic-card.selected {
+      border-color: var(--primary);
+      background: var(--bg-hover);
+      box-shadow: 0 4px 20px rgba(0, 180, 216, 0.2);
+    }
+
+    .clinic-card.selected::before { transform: scaleY(1); }
+
+    .clinic-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 0.75rem;
+      gap: 0.75rem;
+    }
+
+    .lang-he .clinic-header {
+      flex-direction: row-reverse;
+    }
+
+    .clinic-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .lang-he .clinic-info {
+      text-align: right;
+    }
+
+    .clinic-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .clinic-address {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .lang-he .clinic-address {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+    }
+
+    .status-badge {
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .lang-he .status-badge {
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .status-badge.open {
+      background: rgba(6, 214, 160, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(6, 214, 160, 0.3);
+    }
+
+    .status-badge.closed {
+      background: rgba(239, 68, 68, 0.15);
+      color: #EF4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .clinic-services {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .lang-he .clinic-services {
+      direction: rtl;
+    }
+
+    .service-tag {
+      padding: 0.3rem 0.65rem;
+      background: rgba(0, 180, 216, 0.1);
+      border: 1px solid rgba(0, 180, 216, 0.2);
+      border-radius: 6px;
+      font-size: 0.7rem;
+      color: var(--primary);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .clinic-contact {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .lang-he .clinic-contact {
+      direction: ltr;
+      justify-content: flex-end;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* ===== MAP ===== */
+    .map-container {
+      flex: 1;
+      position: relative;
+      background: var(--bg-dark);
+    }
+
+    /* CRITICAL: Map always stays LTR regardless of language */
+    #map {
+      height: 100%;
+      width: 100%;
+      direction: ltr !important;
+    }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 14, 39, 0.95);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      animation: fadeIn 0.3s ease;
+      padding: 1rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      animation: slideUp 0.3s ease;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 180, 216, 0.05);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .lang-he .modal-header {
+      flex-direction: row-reverse;
+    }
+
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.25rem;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .close-btn:active {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .lang-he .modal-body {
+      text-align: right;
+    }
+
+    .form-group { margin-bottom: 1.5rem; }
+
+    .form-label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+    }
+
+    .status-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .toggle-option {
+      padding: 1rem;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      touch-action: manipulation;
+    }
+
+    .toggle-option:active { transform: scale(0.95); }
+
+    .toggle-option.active.open {
+      border-color: var(--success);
+      background: rgba(6, 214, 160, 0.1);
+      color: var(--success);
+    }
+
+    .toggle-option.active.closed {
+      border-color: #EF4444;
+      background: rgba(239, 68, 68, 0.1);
+      color: #EF4444;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .service-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+
+    .lang-he .service-checkbox {
+      flex-direction: row-reverse;
+    }
+
+    .service-checkbox:active { background: var(--bg-hover); }
+
+    .service-checkbox input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .service-checkbox label {
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      user-select: none;
+      flex: 1;
+    }
+
+    .save-btn {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--success), #04b886);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+      touch-action: manipulation;
+    }
+
+    .save-btn:active { transform: scale(0.98); }
+
+    .last-updated {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Leaflet popup */
+    .leaflet-popup-content-wrapper {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .leaflet-popup-tip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--bg-card);
+      border-top: 2px solid var(--border);
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      line-height: 1.6;
+      flex-shrink: 0;
+    }
+
+    .footer-disclaimer {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: rgba(255, 107, 157, 0.1);
+      border: 1px solid rgba(255, 107, 157, 0.2);
+      border-radius: 8px;
+      color: var(--secondary);
+      font-size: 0.75rem;
+    }
+
+    .footer-disclaimer strong { color: var(--secondary); font-weight: 700; }
+
+    .footer-copyright { color: var(--text-secondary); font-size: 0.75rem; }
+    .footer-copyright strong { color: var(--text-primary); font-weight: 600; }
+
+    .footer-links {
+      margin-top: 0.75rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-link {
+      color: var(--primary);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .footer-link:hover {
+      color: var(--secondary);
+      text-decoration: underline;
+    }
+
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      .header { padding: 0.75rem 1rem; }
+      .logo-text { font-size: 0.95rem; }
+      .logo-icon { width: 32px; height: 32px; font-size: 1.1rem; }
+      .header-actions { gap: 0.4rem; }
+
+      .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+      }
+
+      .btn .btn-label { display: none; }
+
+      .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .container {
+        flex-direction: column !important;
+        position: relative;
+      }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: 85%;
+        max-width: 320px;
+        z-index: 1500;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+      }
+
+      /* LTR mobile sidebar */
+      body:not(.lang-he) .sidebar {
+        left: 0;
+        border-right: 2px solid var(--border);
+      }
+
+      body:not(.lang-he) .sidebar.mobile-hidden {
+        transform: translateX(-100%);
+      }
+
+      /* RTL mobile sidebar */
+      body.lang-he .sidebar {
+        right: 0;
+        left: auto;
+        border-left: 2px solid var(--border);
+        border-right: none;
+      }
+
+      body.lang-he .sidebar.mobile-hidden {
+        transform: translateX(100%);
+      }
+
+      .map-container { height: 100%; min-height: 400px; }
+      .modal { margin: 0.5rem; max-height: calc(100vh - 1rem); }
+      .modal-header { padding: 1rem; }
+      .modal-title { font-size: 1.1rem; }
+      .modal-body { padding: 1rem; }
+      .clinic-card { padding: 1rem; }
+      .clinic-name { font-size: 0.95rem; }
+      .filters { padding: 1rem; }
+
+      .footer { padding: 1rem; font-size: 0.7rem; }
+      .footer-disclaimer { font-size: 0.7rem; padding: 0.6rem; }
+      .footer-copyright { font-size: 0.7rem; }
+      .footer-links { flex-direction: column; gap: 0.5rem; }
+    }
+
+    @media (max-width: 400px) {
+      .logo-text { font-size: 0.85rem; }
+      .status-toggle { gap: 0.5rem; }
+      .toggle-option { padding: 0.75rem; font-size: 0.85rem; }
+      .service-tag { font-size: 0.65rem; padding: 0.25rem 0.5rem; }
+    }
+
+    /* Sidebar overlay for mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1400;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .sidebar-overlay.visible { display: block; }
+
+    @media (min-width: 769px) {
+      .sidebar-overlay { display: none !important; }
+    }
+
+    /* Language switch transition */
+    .lang-transition * {
+      transition: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ===== TRANSLATIONS =====
+    const translations = {
+      en: {
+        siteTitle: 'Tel Aviv Vet Clinics',
+        dashboard: 'Dashboard',
+        viewAll: 'View All',
+        filterByStatus: 'Filter by Status',
+        filterByService: 'Filter by Service',
+        allClinics: 'All Clinics',
+        openNow: 'Open Now',
+        closed: 'Closed',
+        allServices: 'All Services',
+        open: 'Open',
+        noMatch: 'No clinics match your filters',
+        clinicDashboard: 'Clinic Dashboard',
+        currentStatus: 'Current Status',
+        availableServices: 'Available Services',
+        saveChanges: '💾 Save Changes',
+        lastUpdated: 'Last updated',
+        disclaimer: '⚠️ Experimental Platform Disclaimer:',
+        disclaimerText: 'This website is an experimental demonstration project for portfolio purposes. The information displayed, including clinic locations, contact details, and availability status, is simulated data for demonstration only. This is not a production service. Please verify all veterinary clinic information through official channels before visiting.',
+        copyright: 'All rights reserved. This project and all associated code, design, and content are protected by copyright law.',
+        services: {
+          'Emergency Care': 'Emergency Care',
+          'Surgery': 'Surgery',
+          'Vaccination': 'Vaccination',
+          'Dental Care': 'Dental Care',
+          'X-Ray/Imaging': 'X-Ray/Imaging',
+          'Laboratory Tests': 'Laboratory Tests',
+          'Grooming': 'Grooming',
+          'Pet Hotel': 'Pet Hotel'
+        }
+      },
+      he: {
+        siteTitle: 'מרפאות וטרינריות ת״א',
+        dashboard: 'לוח בקרה',
+        viewAll: 'הצג הכל',
+        filterByStatus: 'סינון לפי סטטוס',
+        filterByService: 'סינון לפי שירות',
+        allClinics: 'כל המרפאות',
+        openNow: 'פתוח עכשיו',
+        closed: 'סגור',
+        allServices: 'כל השירותים',
+        open: 'פתוח',
+        noMatch: 'אין מרפאות התואמות את הסינון',
+        clinicDashboard: 'לוח בקרה',
+        currentStatus: 'סטטוס נוכחי',
+        availableServices: 'שירותים זמינים',
+        saveChanges: '💾 שמור שינויים',
+        lastUpdated: 'עדכון אחרון',
+        disclaimer: '⚠️ הצהרת פלטפורמה ניסיונית:',
+        disclaimerText: 'אתר זה הוא פרויקט הדגמה ניסיוני למטרות תיק עבודות. המידע המוצג, כולל מיקומי מרפאות, פרטי קשר וסטטוס זמינות, הוא נתונים מדומים להדגמה בלבד. זהו לא שירות פעיל. אנא אמתו את כל פרטי המרפאות הווטרינריות דרך ערוצים רשמיים לפני ביקור.',
+        copyright: 'כל הזכויות שמורות. פרויקט זה וכל הקוד, העיצוב והתוכן הקשורים מוגנים על ידי חוקי זכויות יוצרים.',
+        services: {
+          'Emergency Care': 'טיפול חירום',
+          'Surgery': 'כירורגיה',
+          'Vaccination': 'חיסונים',
+          'Dental Care': 'טיפולי שיניים',
+          'X-Ray/Imaging': 'צילום רנטגן/הדמיה',
+          'Laboratory Tests': 'בדיקות מעבדה',
+          'Grooming': 'טיפוח',
+          'Pet Hotel': 'מלונית חיות'
+        }
+      }
+    };
+
+    // Clinic names in Hebrew
+    const clinicNamesHe = {
+      '1': 'המרכז הווטרינרי תל אביב',
+      '2': 'בית חולים לחיות צפון ת״א',
+      '3': 'מרפאה וטרינרית דרום ת״א',
+      '4': 'יפו טיפול חיות מחמד',
+      '5': 'הווטרינר רמת אביב'
+    };
+
+    const clinicAddressesHe = {
+      '1': 'רחוב דיזנגוף 234, תל אביב',
+      '2': 'רחוב אבן גבירול 123, תל אביב',
+      '3': 'רחוב אלנבי 87, תל אביב',
+      '4': 'רחוב יפת 45, יפו',
+      '5': 'רחוב איינשטיין 12, רמת אביב'
+    };
+
+    // Sample data
+    const initialClinics = [
+      {
+        id: '1', name: 'Tel Aviv Veterinary Center',
+        address: 'Dizengoff St 234, Tel Aviv',
+        coordinates: { lat: 32.0853, lng: 34.7818 },
+        phone: '03-5551234', email: 'info@tlvvet.com',
+        isOpen: true,
+        services: ['Emergency Care', 'Surgery', 'X-Ray/Imaging', 'Laboratory Tests'],
+        lastUpdated: new Date().toISOString()
+      },
+      {
+        id: '2', name: 'North Tel Aviv Animal Hospital',
+        address: 'Ibn Gabirol St 123, Tel Aviv',
+        coordinates: { lat: 32.0922, lng: 34.7842 },
+        phone: '03-5555678', email: 'contact@northvet.co.il',
+        isOpen: true,
+        services: ['Emergency Care', 'Vaccination', 'Dental Care', 'Grooming'],
+        lastUpdated: new Date().toISOString()
+      },
+      {
+        id: '3', name: 'South Tel Aviv Vet Clinic',
+        address: 'Allenby St 87, Tel Aviv',
+        coordinates: { lat: 32.0668, lng: 34.7710 },
+        phone: '03-5559012', email: 'hello@southvet.co.il',
+        isOpen: false,
+        services: ['Surgery', 'Vaccination', 'Laboratory Tests', 'Pet Hotel'],
+        lastUpdated: new Date().toISOString()
+      },
+      {
+        id: '4', name: 'Jaffa Pet Care',
+        address: 'Yefet St 45, Jaffa',
+        coordinates: { lat: 32.0543, lng: 34.7516 },
+        phone: '03-5551122', email: 'care@jaffapet.com',
+        isOpen: true,
+        services: ['Emergency Care', 'Dental Care', 'Grooming', 'X-Ray/Imaging'],
+        lastUpdated: new Date().toISOString()
+      },
+      {
+        id: '5', name: 'Ramat Aviv Veterinary',
+        address: 'Einstein St 12, Ramat Aviv',
+        coordinates: { lat: 32.1134, lng: 34.8005 },
+        phone: '03-5553344', email: 'info@ramatvet.co.il',
+        isOpen: true,
+        services: ['Surgery', 'X-Ray/Imaging', 'Laboratory Tests', 'Vaccination'],
+        lastUpdated: new Date().toISOString()
+      }
+    ];
+
+    const allServices = [
+      'Emergency Care', 'Surgery', 'Vaccination', 'Dental Care',
+      'X-Ray/Imaging', 'Laboratory Tests', 'Grooming', 'Pet Hotel'
+    ];
+
+    function App() {
+      const [lang, setLang] = useState(() => {
+        return localStorage.getItem('vetLang') || 'en';
+      });
+      const [clinics, setClinics] = useState(() => {
+        const saved = localStorage.getItem('vetClinics');
+        return saved ? JSON.parse(saved) : initialClinics;
+      });
+      const [selectedClinic, setSelectedClinic] = useState(null);
+      const [showDashboard, setShowDashboard] = useState(false);
+      const [dashboardClinic, setDashboardClinic] = useState(null);
+      const [filterStatus, setFilterStatus] = useState('all');
+      const [filterService, setFilterService] = useState('all');
+      const [sidebarVisible, setSidebarVisible] = useState(false);
+      const mapRef = useRef(null);
+      const mapInstanceRef = useRef(null);
+      const markersRef = useRef([]);
+
+      const t = translations[lang];
+      const isHe = lang === 'he';
+
+      // Get localized clinic name
+      const getClinicName = useCallback((clinic) => {
+        return isHe ? (clinicNamesHe[clinic.id] || clinic.name) : clinic.name;
+      }, [isHe]);
+
+      // Get localized address
+      const getClinicAddress = useCallback((clinic) => {
+        return isHe ? (clinicAddressesHe[clinic.id] || clinic.address) : clinic.address;
+      }, [isHe]);
+
+      // Get localized service name
+      const getServiceName = useCallback((service) => {
+        return t.services[service] || service;
+      }, [t]);
+
+      // Save language preference
+      useEffect(() => {
+        localStorage.setItem('vetLang', lang);
+        // Update body class for CSS
+        document.body.className = isHe ? 'lang-he' : '';
+      }, [lang, isHe]);
+
+      // Save clinics to localStorage
+      useEffect(() => {
+        localStorage.setItem('vetClinics', JSON.stringify(clinics));
+      }, [clinics]);
+
+      const getFilteredClinics = useCallback(() => {
+        return clinics.filter(clinic => {
+          const statusMatch = filterStatus === 'all' ||
+            (filterStatus === 'open' && clinic.isOpen) ||
+            (filterStatus === 'closed' && !clinic.isOpen);
+          const serviceMatch = filterService === 'all' ||
+            clinic.services.includes(filterService);
+          return statusMatch && serviceMatch;
+        });
+      }, [clinics, filterStatus, filterService]);
+
+      // Initialize and update map
+      useEffect(() => {
+        if (!mapInstanceRef.current) {
+          const map = L.map('map', {
+            // Ensure map is always LTR
+            zoomControl: true
+          }).setView([32.0853, 34.7818], 13);
+
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+          }).addTo(map);
+
+          mapInstanceRef.current = map;
+
+          const resizeObserver = new ResizeObserver(() => {
+            map.invalidateSize();
+          });
+          const mapElement = document.getElementById('map');
+          if (mapElement) resizeObserver.observe(mapElement);
+
+          // Small delay to fix initial size
+          setTimeout(() => map.invalidateSize(), 100);
+        }
+
+        // Clear existing markers
+        markersRef.current.forEach(marker => marker.remove());
+        markersRef.current = [];
+
+        const filtered = getFilteredClinics();
+        filtered.forEach(clinic => {
+          const icon = L.divIcon({
+            className: 'custom-marker',
+            html: `
+              <div style="
+                width: 32px; height: 32px;
+                background: ${clinic.isOpen ? '#06D6A0' : '#EF4444'};
+                border: 3px solid white;
+                border-radius: 50%;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                display: flex; align-items: center; justify-content: center;
+                font-size: 16px;
+              ">🐾</div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+          });
+
+          const clinicName = isHe ? (clinicNamesHe[clinic.id] || clinic.name) : clinic.name;
+          const clinicAddr = isHe ? (clinicAddressesHe[clinic.id] || clinic.address) : clinic.address;
+          const statusText = clinic.isOpen ? (isHe ? 'פתוח' : 'Open') : (isHe ? 'סגור' : 'Closed');
+
+          const marker = L.marker([clinic.coordinates.lat, clinic.coordinates.lng], { icon })
+            .addTo(mapInstanceRef.current)
+            .bindPopup(`
+              <div style="min-width: 200px; direction: ${isHe ? 'rtl' : 'ltr'}; text-align: ${isHe ? 'right' : 'left'};">
+                <strong style="font-size: 1.1em;">${clinicName}</strong><br/>
+                <span style="color: ${clinic.isOpen ? '#06D6A0' : '#EF4444'};">
+                  ● ${statusText}
+                </span><br/>
+                <small>${clinicAddr}</small>
+              </div>
+            `);
+
+          marker.on('click', () => {
+            setSelectedClinic(clinic.id);
+            if (window.innerWidth <= 768) setSidebarVisible(true);
+          });
+
+          markersRef.current.push(marker);
+        });
+      }, [clinics, filterStatus, filterService, isHe, getFilteredClinics]);
+
+      // Fix map size when language changes
+      useEffect(() => {
+        if (mapInstanceRef.current) {
+          // Use requestAnimationFrame + timeout to ensure layout is complete
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              mapInstanceRef.current.invalidateSize();
+            }, 150);
+          });
+        }
+      }, [lang]);
+
+      const handleClinicClick = (clinic) => {
+        setSelectedClinic(clinic.id);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.setView([clinic.coordinates.lat, clinic.coordinates.lng], 15);
+        }
+        if (window.innerWidth <= 768) setSidebarVisible(false);
+      };
+
+      const openDashboard = (clinic) => {
+        setDashboardClinic({...clinic});
+        setShowDashboard(true);
+      };
+
+      const handleDashboardSave = () => {
+        setClinics(prev => prev.map(c =>
+          c.id === dashboardClinic.id
+            ? {...dashboardClinic, lastUpdated: new Date().toISOString()}
+            : c
+        ));
+        setShowDashboard(false);
+        setDashboardClinic(null);
+      };
+
+      const toggleLang = () => {
+        // Briefly add transition-blocker class
+        document.body.classList.add('lang-transition');
+        setLang(prev => prev === 'en' ? 'he' : 'en');
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            document.body.classList.remove('lang-transition');
+          }, 50);
+        });
+      };
+
+      const toggleSidebar = () => setSidebarVisible(!sidebarVisible);
+
+      const filteredClinics = getFilteredClinics();
+
+      return (
+        <>
+          <header className="header">
+            <div className="logo">
+              <button className="mobile-menu-btn" onClick={toggleSidebar}>☰</button>
+              <div className="logo-icon">🐾</div>
+              <div className="logo-text">{t.siteTitle}</div>
+            </div>
+            <div className="header-actions">
+              <button className="btn btn-lang" onClick={toggleLang} title={isHe ? 'Switch to English' : 'עברית'}>
+                <span className="lang-flag">{isHe ? '🇬🇧' : '🇮🇱'}</span>
+                <span className="btn-label">{isHe ? 'EN' : 'עב'}</span>
+              </button>
+              <button className="btn btn-secondary" onClick={() => {
+                if (filteredClinics.length > 0) openDashboard(filteredClinics[0]);
+              }}>
+                📊 <span className="btn-label">{t.dashboard}</span>
+              </button>
+              <button className="btn btn-primary" onClick={() => {
+                const bounds = L.latLngBounds(clinics.map(c => [c.coordinates.lat, c.coordinates.lng]));
+                mapInstanceRef.current?.fitBounds(bounds);
+              }}>
+                🗺️ <span className="btn-label">{t.viewAll}</span>
+              </button>
+            </div>
+          </header>
+
+          <div className="container">
+            {sidebarVisible && window.innerWidth <= 768 && (
+              <div className="sidebar-overlay visible" onClick={() => setSidebarVisible(false)}></div>
+            )}
+
+            <aside className={`sidebar ${!sidebarVisible && window.innerWidth <= 768 ? 'mobile-hidden' : ''}`}>
+              <div className="filters">
+                <div className="filter-group">
+                  <label className="filter-label">{t.filterByStatus}</label>
+                  <select
+                    className="filter-select"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                  >
+                    <option value="all">{t.allClinics}</option>
+                    <option value="open">{t.openNow}</option>
+                    <option value="closed">{t.closed}</option>
+                  </select>
+                </div>
+                <div className="filter-group">
+                  <label className="filter-label">{t.filterByService}</label>
+                  <select
+                    className="filter-select"
+                    value={filterService}
+                    onChange={(e) => setFilterService(e.target.value)}
+                  >
+                    <option value="all">{t.allServices}</option>
+                    {allServices.map(service => (
+                      <option key={service} value={service}>{getServiceName(service)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="clinics-list">
+                {filteredClinics.length === 0 ? (
+                  <div style={{textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)'}}>
+                    {t.noMatch}
+                  </div>
+                ) : (
+                  filteredClinics.map(clinic => (
+                    <div
+                      key={clinic.id}
+                      className={`clinic-card ${selectedClinic === clinic.id ? 'selected' : ''}`}
+                      onClick={() => handleClinicClick(clinic)}
+                    >
+                      <div className="clinic-header">
+                        <div className="clinic-info">
+                          <h3 className="clinic-name">{getClinicName(clinic)}</h3>
+                          <div className="clinic-address">
+                            📍 {getClinicAddress(clinic)}
+                          </div>
+                        </div>
+                        <span className={`status-badge ${clinic.isOpen ? 'open' : 'closed'}`}>
+                          <span className="status-dot"></span>
+                          {clinic.isOpen ? t.open : t.closed}
+                        </span>
+                      </div>
+                      <div className="clinic-services">
+                        {clinic.services.slice(0, 3).map(service => (
+                          <span key={service} className="service-tag">{getServiceName(service)}</span>
+                        ))}
+                        {clinic.services.length > 3 && (
+                          <span className="service-tag">+{clinic.services.length - 3}</span>
+                        )}
+                      </div>
+                      <div className="clinic-contact">
+                        <div className="contact-item">📞 {clinic.phone}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </aside>
+
+            <main className="map-container">
+              <div id="map" ref={mapRef}></div>
+            </main>
+          </div>
+
+          <footer className="footer">
+            <div className="footer-disclaimer">
+              <strong>{t.disclaimer}</strong> {t.disclaimerText}
+            </div>
+            <div className="footer-copyright">
+              © {new Date().getFullYear()} <strong>Dima Levin</strong>. {t.copyright}
+            </div>
+            <div className="footer-links">
+              <a href="https://github.com/dima765t" className="footer-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href="https://www.linkedin.com/in/dima-levin-y37" className="footer-link" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              <a href="mailto:dima765t@gmail.com" className="footer-link">Contact</a>
+            </div>
+          </footer>
+
+          {showDashboard && dashboardClinic && (
+            <div className="modal-overlay" onClick={() => setShowDashboard(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2 className="modal-title">{t.clinicDashboard}</h2>
+                  <button className="close-btn" onClick={() => setShowDashboard(false)}>×</button>
+                </div>
+                <div className="modal-body">
+                  <h3 style={{marginBottom: '1.5rem', color: 'var(--primary)'}}>
+                    {getClinicName(dashboardClinic)}
+                  </h3>
+
+                  <div className="form-group">
+                    <label className="form-label">{t.currentStatus}</label>
+                    <div className="status-toggle">
+                      <div
+                        className={`toggle-option open ${dashboardClinic.isOpen ? 'active' : ''}`}
+                        onClick={() => setDashboardClinic({...dashboardClinic, isOpen: true})}
+                      >
+                        <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>✅</div>
+                        {t.open}
+                      </div>
+                      <div
+                        className={`toggle-option closed ${!dashboardClinic.isOpen ? 'active' : ''}`}
+                        onClick={() => setDashboardClinic({...dashboardClinic, isOpen: false})}
+                      >
+                        <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>🚫</div>
+                        {t.closed}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">{t.availableServices}</label>
+                    <div className="services-grid">
+                      {allServices.map(service => (
+                        <div key={service} className="service-checkbox">
+                          <input
+                            type="checkbox"
+                            id={service}
+                            checked={dashboardClinic.services.includes(service)}
+                            onChange={(e) => {
+                              const newServices = e.target.checked
+                                ? [...dashboardClinic.services, service]
+                                : dashboardClinic.services.filter(s => s !== service);
+                              setDashboardClinic({...dashboardClinic, services: newServices});
+                            }}
+                          />
+                          <label htmlFor={service}>{getServiceName(service)}</label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button className="save-btn" onClick={handleDashboardSave}>
+                    {t.saveChanges}
+                  </button>
+
+                  <div className="last-updated">
+                    {t.lastUpdated}: {new Date(dashboardClinic.lastUpdated).toLocaleString(isHe ? 'he-IL' : 'en-IL')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
