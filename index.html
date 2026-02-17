@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -11,7 +11,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Heebo:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -41,17 +41,28 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
     }
 
-    html {
-      height: -webkit-fill-available;
+    /* Hebrew font when RTL */
+    [dir="rtl"] body,
+    [dir="rtl"] .btn,
+    [dir="rtl"] .filter-select,
+    [dir="rtl"] .service-checkbox label,
+    [dir="rtl"] .form-label,
+    [dir="rtl"] .modal-title,
+    [dir="rtl"] .clinic-name,
+    [dir="rtl"] .clinic-address,
+    [dir="rtl"] .status-badge,
+    [dir="rtl"] .service-tag,
+    [dir="rtl"] .filter-label,
+    [dir="rtl"] .footer,
+    [dir="rtl"] .toggle-option,
+    [dir="rtl"] .save-btn {
+      font-family: 'Heebo', 'Outfit', sans-serif;
     }
 
     #root {
       min-height: 100vh;
-      min-height: -webkit-fill-available;
       display: flex;
       flex-direction: column;
     }
@@ -101,6 +112,10 @@
       white-space: nowrap;
     }
 
+    [dir="rtl"] .logo-text {
+      font-family: 'Heebo', sans-serif;
+    }
+
     .header-actions {
       display: flex;
       gap: 0.5rem;
@@ -143,6 +158,28 @@
       background: var(--border);
     }
 
+    /* Language toggle button - compact */
+    .btn-lang {
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.5rem 0.65rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      touch-action: manipulation;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .btn-lang:active {
+      transform: scale(0.9);
+      background: var(--border);
+    }
+
     /* Mobile menu button */
     .mobile-menu-btn {
       display: none;
@@ -176,8 +213,18 @@
       transition: transform 0.3s ease;
     }
 
+    /* RTL: sidebar on the right */
+    [dir="rtl"] .sidebar {
+      border-right: none;
+      border-left: 2px solid var(--border);
+    }
+
     .sidebar.mobile-hidden {
       transform: translateX(-100%);
+    }
+
+    [dir="rtl"] .sidebar.mobile-hidden {
+      transform: translateX(100%);
     }
 
     .filters {
@@ -205,6 +252,10 @@
       letter-spacing: 0.05em;
     }
 
+    [dir="rtl"] .filter-label {
+      text-align: right;
+    }
+
     .filter-select {
       width: 100%;
       padding: 0.75rem;
@@ -222,6 +273,13 @@
       background-repeat: no-repeat;
       background-position: right 0.75rem center;
       padding-right: 2.5rem;
+    }
+
+    [dir="rtl"] .filter-select {
+      background-position: left 0.75rem center;
+      padding-right: 0.75rem;
+      padding-left: 2.5rem;
+      text-align: right;
     }
 
     .filter-select:focus {
@@ -262,6 +320,11 @@
       transition: transform 0.3s ease;
     }
 
+    [dir="rtl"] .clinic-card::before {
+      left: auto;
+      right: 0;
+    }
+
     .clinic-card:active {
       transform: scale(0.98);
     }
@@ -289,6 +352,10 @@
       min-width: 0;
     }
 
+    [dir="rtl"] .clinic-info {
+      text-align: right;
+    }
+
     .clinic-name {
       font-size: 1.05rem;
       font-weight: 700;
@@ -304,6 +371,10 @@
       display: flex;
       align-items: center;
       gap: 0.25rem;
+    }
+
+    [dir="rtl"] .clinic-address {
+      direction: rtl;
     }
 
     .status-badge {
@@ -385,17 +456,11 @@
       flex: 1;
       position: relative;
       background: var(--bg-dark);
-      min-height: 0;
     }
 
     #map {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
       height: 100%;
+      width: 100%;
     }
 
     /* Modal Overlay */
@@ -486,6 +551,10 @@
 
     .modal-body {
       padding: 1.5rem;
+    }
+
+    [dir="rtl"] .modal-body {
+      text-align: right;
     }
 
     .form-group {
@@ -683,13 +752,23 @@
         box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
       }
 
+      [dir="rtl"] .sidebar {
+        left: auto;
+        right: 0;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+      }
+
       .sidebar.mobile-hidden {
         transform: translateX(-100%);
       }
 
+      [dir="rtl"] .sidebar.mobile-hidden {
+        transform: translateX(100%);
+      }
+
       .map-container {
-        flex: 1;
-        min-height: 300px;
+        height: 100%;
+        min-height: 400px;
       }
 
       .modal {
@@ -848,7 +927,92 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ========================
+    // TRANSLATIONS
+    // ========================
+    const translations = {
+      en: {
+        siteTitle: 'Tel Aviv Vet Clinics',
+        dashboard: 'Dashboard',
+        viewAll: 'View All',
+        filterByStatus: 'Filter by Status',
+        filterByService: 'Filter by Service',
+        allClinics: 'All Clinics',
+        openNow: 'Open Now',
+        closed: 'Closed',
+        allServices: 'All Services',
+        open: 'Open',
+        noMatch: 'No clinics match your filters',
+        more: 'more',
+        clinicDashboard: 'Clinic Dashboard',
+        currentStatus: 'Current Status',
+        availableServices: 'Available Services',
+        saveChanges: '💾 Save Changes',
+        lastUpdated: 'Last updated',
+        disclaimerTitle: '⚠️ Experimental Platform Disclaimer:',
+        disclaimerText: 'This website is an experimental demonstration project for portfolio purposes. The information displayed, including clinic locations, contact details, and availability status, is simulated data for demonstration only. This is not a production service. Please verify all veterinary clinic information through official channels before visiting.',
+        copyright: 'All rights reserved. This project and all associated code, design, and content are protected by copyright law.',
+        // Service names
+        'Emergency Care': 'Emergency Care',
+        'Surgery': 'Surgery',
+        'Vaccination': 'Vaccination',
+        'Dental Care': 'Dental Care',
+        'X-Ray/Imaging': 'X-Ray/Imaging',
+        'Laboratory Tests': 'Laboratory Tests',
+        'Grooming': 'Grooming',
+        'Pet Hotel': 'Pet Hotel',
+      },
+      he: {
+        siteTitle: 'וטרינרים בתל אביב',
+        dashboard: 'לוח בקרה',
+        viewAll: 'הצג הכל',
+        filterByStatus: 'סינון לפי סטטוס',
+        filterByService: 'סינון לפי שירות',
+        allClinics: 'כל המרפאות',
+        openNow: 'פתוח עכשיו',
+        closed: 'סגור',
+        allServices: 'כל השירותים',
+        open: 'פתוח',
+        noMatch: 'אין מרפאות התואמות את הסינון',
+        more: 'עוד',
+        clinicDashboard: 'לוח בקרה - מרפאה',
+        currentStatus: 'סטטוס נוכחי',
+        availableServices: 'שירותים זמינים',
+        saveChanges: '💾 שמור שינויים',
+        lastUpdated: 'עודכן לאחרונה',
+        disclaimerTitle: '⚠️ הצהרת פלטפורמה ניסיונית:',
+        disclaimerText: 'אתר זה הוא פרויקט הדגמה ניסיוני למטרות תיק עבודות. המידע המוצג, כולל מיקומי מרפאות, פרטי קשר וסטטוס זמינות, הוא נתונים מדומים לצורכי הדגמה בלבד. זהו אינו שירות ייצור. אנא אמתו את כל המידע הווטרינרי דרך ערוצים רשמיים לפני ביקור.',
+        copyright: 'כל הזכויות שמורות. פרויקט זה וכל הקוד, העיצוב והתוכן המשויכים מוגנים בחוק זכויות יוצרים.',
+        'Emergency Care': 'טיפול חירום',
+        'Surgery': 'ניתוחים',
+        'Vaccination': 'חיסונים',
+        'Dental Care': 'טיפולי שיניים',
+        'X-Ray/Imaging': 'צילומי רנטגן/הדמיה',
+        'Laboratory Tests': 'בדיקות מעבדה',
+        'Grooming': 'טיפוח',
+        'Pet Hotel': 'פנסיון לחיות',
+      }
+    };
+
+    // Clinic data with both languages
+    const clinicNames = {
+      en: {
+        '1': { name: 'Tel Aviv Veterinary Center', address: 'Dizengoff St 234, Tel Aviv' },
+        '2': { name: 'North Tel Aviv Animal Hospital', address: 'Ibn Gabirol St 123, Tel Aviv' },
+        '3': { name: 'South Tel Aviv Vet Clinic', address: 'Allenby St 87, Tel Aviv' },
+        '4': { name: 'Jaffa Pet Care', address: 'Yefet St 45, Jaffa' },
+        '5': { name: 'Ramat Aviv Veterinary', address: 'Einstein St 12, Ramat Aviv' },
+      },
+      he: {
+        '1': { name: 'המרכז הווטרינרי תל אביב', address: 'רחוב דיזנגוף 234, תל אביב' },
+        '2': { name: 'בית החולים לבעלי חיים צפון ת"א', address: 'רחוב אבן גבירול 123, תל אביב' },
+        '3': { name: 'מרפאה וטרינרית דרום ת"א', address: 'רחוב אלנבי 87, תל אביב' },
+        '4': { name: 'טיפול חיות מחמד יפו', address: 'רחוב יפת 45, יפו' },
+        '5': { name: 'וטרינר רמת אביב', address: 'רחוב איינשטיין 12, רמת אביב' },
+      }
+    };
 
     // Sample data - Tel Aviv vet clinics
     const initialClinics = [
@@ -931,9 +1095,45 @@
       const [filterStatus, setFilterStatus] = useState('all');
       const [filterService, setFilterService] = useState('all');
       const [sidebarVisible, setSidebarVisible] = useState(false);
+      const [lang, setLang] = useState('en');
       const mapRef = useRef(null);
       const mapInstanceRef = useRef(null);
       const markersRef = useRef([]);
+
+      const t = translations[lang];
+
+      // Helper to get localized clinic name/address
+      const getClinicDisplay = (clinic) => {
+        const localized = clinicNames[lang][clinic.id];
+        return localized || { name: clinic.name, address: clinic.address };
+      };
+
+      // Helper to get localized service name
+      const getServiceName = (service) => t[service] || service;
+
+      // Language toggle
+      const toggleLanguage = useCallback(() => {
+        const newLang = lang === 'en' ? 'he' : 'en';
+        setLang(newLang);
+        
+        const html = document.documentElement;
+        html.lang = newLang === 'he' ? 'he' : 'en';
+        html.dir = newLang === 'he' ? 'rtl' : 'ltr';
+
+        // KEY FIX: invalidate map size after layout direction change
+        // Use multiple timeouts to ensure the map recalculates properly
+        if (mapInstanceRef.current) {
+          setTimeout(() => {
+            mapInstanceRef.current.invalidateSize();
+          }, 50);
+          setTimeout(() => {
+            mapInstanceRef.current.invalidateSize();
+          }, 200);
+          setTimeout(() => {
+            mapInstanceRef.current.invalidateSize();
+          }, 500);
+        }
+      }, [lang]);
 
       // Save to localStorage
       useEffect(() => {
@@ -946,7 +1146,7 @@
           const map = L.map('map').setView([32.0853, 34.7818], 13);
           
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'Â© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap contributors'
           }).addTo(map);
 
           mapInstanceRef.current = map;
@@ -961,9 +1161,9 @@
             resizeObserver.observe(mapElement);
           }
 
-          // Force invalidateSize after layout settles (fixes mobile)
-          setTimeout(() => map.invalidateSize(), 100);
-          setTimeout(() => map.invalidateSize(), 500);
+          return () => {
+            resizeObserver.disconnect();
+          };
         }
 
         // Clear existing markers
@@ -973,6 +1173,7 @@
         // Add markers for filtered clinics
         const filtered = getFilteredClinics();
         filtered.forEach(clinic => {
+          const display = clinicNames[lang][clinic.id] || { name: clinic.name, address: clinic.address };
           const icon = L.divIcon({
             className: 'custom-marker',
             html: `
@@ -988,22 +1189,26 @@
                 justify-content: center;
                 font-size: 16px;
               ">
-                ðŸ¾
+                🐾
               </div>
             `,
             iconSize: [32, 32],
             iconAnchor: [16, 16]
           });
 
+          const statusText = clinic.isOpen 
+            ? (lang === 'he' ? '● פתוח' : '● Open') 
+            : (lang === 'he' ? '● סגור' : '● Closed');
+
           const marker = L.marker([clinic.coordinates.lat, clinic.coordinates.lng], { icon })
             .addTo(mapInstanceRef.current)
             .bindPopup(`
-              <div style="min-width: 200px;">
-                <strong style="font-size: 1.1em;">${clinic.name}</strong><br/>
+              <div style="min-width: 200px; direction: ${lang === 'he' ? 'rtl' : 'ltr'}; text-align: ${lang === 'he' ? 'right' : 'left'}; font-family: ${lang === 'he' ? 'Heebo' : 'Outfit'}, sans-serif;">
+                <strong style="font-size: 1.1em;">${display.name}</strong><br/>
                 <span style="color: ${clinic.isOpen ? '#06D6A0' : '#EF4444'};">
-                  ${clinic.isOpen ? 'â— Open' : 'â— Closed'}
+                  ${statusText}
                 </span><br/>
-                <small>${clinic.address}</small>
+                <small>${display.address}</small>
               </div>
             `);
 
@@ -1016,7 +1221,7 @@
 
           markersRef.current.push(marker);
         });
-      }, [clinics, filterStatus, filterService]);
+      }, [clinics, filterStatus, filterService, lang]);
 
       const getFilteredClinics = () => {
         return clinics.filter(clinic => {
@@ -1058,8 +1263,6 @@
 
       const toggleSidebar = () => {
         setSidebarVisible(!sidebarVisible);
-        // Recalculate map size after sidebar animation
-        setTimeout(() => mapInstanceRef.current?.invalidateSize(), 350);
       };
 
       const filteredClinics = getFilteredClinics();
@@ -1069,24 +1272,27 @@
           <header className="header">
             <div className="logo">
               <button className="mobile-menu-btn" onClick={toggleSidebar}>
-                â˜°
+                ☰
               </button>
-              <div className="logo-icon">ðŸ¾</div>
-              <div className="logo-text">Tel Aviv Vet Clinics</div>
+              <div className="logo-icon">🐾</div>
+              <div className="logo-text">{t.siteTitle}</div>
             </div>
             <div className="header-actions">
+              <button className="btn-lang" onClick={toggleLanguage} title={lang === 'en' ? 'עברית' : 'English'}>
+                {lang === 'en' ? '🇮🇱' : '🇬🇧'}
+              </button>
               <button className="btn btn-secondary" onClick={() => {
                 if (filteredClinics.length > 0) {
                   openDashboard(filteredClinics[0]);
                 }
               }}>
-                ðŸ“Š <span>Dashboard</span>
+                📊 <span>{t.dashboard}</span>
               </button>
               <button className="btn btn-primary" onClick={() => {
                 const bounds = L.latLngBounds(clinics.map(c => [c.coordinates.lat, c.coordinates.lng]));
                 mapInstanceRef.current?.fitBounds(bounds);
               }}>
-                ðŸ—ºï¸ <span>View All</span>
+                🗺️ <span>{t.viewAll}</span>
               </button>
             </div>
           </header>
@@ -1099,27 +1305,27 @@
             <aside className={`sidebar ${!sidebarVisible && window.innerWidth <= 768 ? 'mobile-hidden' : ''}`}>
               <div className="filters">
                 <div className="filter-group">
-                  <label className="filter-label">Filter by Status</label>
+                  <label className="filter-label">{t.filterByStatus}</label>
                   <select 
                     className="filter-select"
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
                   >
-                    <option value="all">All Clinics</option>
-                    <option value="open">Open Now</option>
-                    <option value="closed">Closed</option>
+                    <option value="all">{t.allClinics}</option>
+                    <option value="open">{t.openNow}</option>
+                    <option value="closed">{t.closed}</option>
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label className="filter-label">Filter by Service</label>
+                  <label className="filter-label">{t.filterByService}</label>
                   <select 
                     className="filter-select"
                     value={filterService}
                     onChange={(e) => setFilterService(e.target.value)}
                   >
-                    <option value="all">All Services</option>
+                    <option value="all">{t.allServices}</option>
                     {allServices.map(service => (
-                      <option key={service} value={service}>{service}</option>
+                      <option key={service} value={service}>{getServiceName(service)}</option>
                     ))}
                   </select>
                 </div>
@@ -1128,40 +1334,43 @@
               <div className="clinics-list">
                 {filteredClinics.length === 0 ? (
                   <div style={{textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)'}}>
-                    No clinics match your filters
+                    {t.noMatch}
                   </div>
                 ) : (
-                  filteredClinics.map(clinic => (
-                    <div 
-                      key={clinic.id}
-                      className={`clinic-card ${selectedClinic === clinic.id ? 'selected' : ''}`}
-                      onClick={() => handleClinicClick(clinic)}
-                    >
-                      <div className="clinic-header">
-                        <div className="clinic-info">
-                          <h3 className="clinic-name">{clinic.name}</h3>
-                          <div className="clinic-address">
-                            ðŸ“ {clinic.address}
+                  filteredClinics.map(clinic => {
+                    const display = getClinicDisplay(clinic);
+                    return (
+                      <div 
+                        key={clinic.id}
+                        className={`clinic-card ${selectedClinic === clinic.id ? 'selected' : ''}`}
+                        onClick={() => handleClinicClick(clinic)}
+                      >
+                        <div className="clinic-header">
+                          <div className="clinic-info">
+                            <h3 className="clinic-name">{display.name}</h3>
+                            <div className="clinic-address">
+                              📍 {display.address}
+                            </div>
                           </div>
+                          <span className={`status-badge ${clinic.isOpen ? 'open' : 'closed'}`}>
+                            <span className="status-dot"></span>
+                            {clinic.isOpen ? t.open : t.closed}
+                          </span>
                         </div>
-                        <span className={`status-badge ${clinic.isOpen ? 'open' : 'closed'}`}>
-                          <span className="status-dot"></span>
-                          {clinic.isOpen ? 'Open' : 'Closed'}
-                        </span>
+                        <div className="clinic-services">
+                          {clinic.services.slice(0, 3).map(service => (
+                            <span key={service} className="service-tag">{getServiceName(service)}</span>
+                          ))}
+                          {clinic.services.length > 3 && (
+                            <span className="service-tag">+{clinic.services.length - 3} {t.more}</span>
+                          )}
+                        </div>
+                        <div className="clinic-contact">
+                          <div className="contact-item">📞 {clinic.phone}</div>
+                        </div>
                       </div>
-                      <div className="clinic-services">
-                        {clinic.services.slice(0, 3).map(service => (
-                          <span key={service} className="service-tag">{service}</span>
-                        ))}
-                        {clinic.services.length > 3 && (
-                          <span className="service-tag">+{clinic.services.length - 3} more</span>
-                        )}
-                      </div>
-                      <div className="clinic-contact">
-                        <div className="contact-item">ðŸ“ž {clinic.phone}</div>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </aside>
@@ -1173,14 +1382,10 @@
 
           <footer className="footer">
             <div className="footer-disclaimer">
-              <strong>âš ï¸ Experimental Platform Disclaimer:</strong> This website is an experimental demonstration project 
-              for portfolio purposes. The information displayed, including clinic locations, contact details, and availability 
-              status, is simulated data for demonstration only. This is not a production service. Please verify all 
-              veterinary clinic information through official channels before visiting.
+              <strong>{t.disclaimerTitle}</strong> {t.disclaimerText}
             </div>
             <div className="footer-copyright">
-              Â© {new Date().getFullYear()} <strong>Dima Levin</strong>. All rights reserved. 
-              This project and all associated code, design, and content are protected by copyright law.
+              © {new Date().getFullYear()} <strong>Dima Levin</strong>. {t.copyright}
             </div>
             <div className="footer-links">
               <a href="https://github.com/dima765t" className="footer-link" target="_blank" rel="noopener noreferrer">
@@ -1199,34 +1404,36 @@
             <div className="modal-overlay" onClick={() => setShowDashboard(false)}>
               <div className="modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                  <h2 className="modal-title">Clinic Dashboard</h2>
-                  <button className="close-btn" onClick={() => setShowDashboard(false)}>Ã—</button>
+                  <h2 className="modal-title">{t.clinicDashboard}</h2>
+                  <button className="close-btn" onClick={() => setShowDashboard(false)}>×</button>
                 </div>
                 <div className="modal-body">
-                  <h3 style={{marginBottom: '1.5rem', color: 'var(--primary)'}}>{dashboardClinic.name}</h3>
+                  <h3 style={{marginBottom: '1.5rem', color: 'var(--primary)'}}>
+                    {getClinicDisplay(dashboardClinic).name}
+                  </h3>
                   
                   <div className="form-group">
-                    <label className="form-label">Current Status</label>
+                    <label className="form-label">{t.currentStatus}</label>
                     <div className="status-toggle">
                       <div 
                         className={`toggle-option open ${dashboardClinic.isOpen ? 'active' : ''}`}
                         onClick={() => setDashboardClinic({...dashboardClinic, isOpen: true})}
                       >
-                        <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>âœ…</div>
-                        Open
+                        <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>✅</div>
+                        {t.open}
                       </div>
                       <div 
                         className={`toggle-option closed ${!dashboardClinic.isOpen ? 'active' : ''}`}
                         onClick={() => setDashboardClinic({...dashboardClinic, isOpen: false})}
                       >
-                        <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>ðŸš«</div>
-                        Closed
+                        <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>🚫</div>
+                        {t.closed}
                       </div>
                     </div>
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Available Services</label>
+                    <label className="form-label">{t.availableServices}</label>
                     <div className="services-grid">
                       {allServices.map(service => (
                         <div key={service} className="service-checkbox">
@@ -1241,18 +1448,18 @@
                               setDashboardClinic({...dashboardClinic, services: newServices});
                             }}
                           />
-                          <label htmlFor={service}>{service}</label>
+                          <label htmlFor={service}>{getServiceName(service)}</label>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <button className="save-btn" onClick={handleDashboardSave}>
-                    ðŸ’¾ Save Changes
+                    {t.saveChanges}
                   </button>
 
                   <div className="last-updated">
-                    Last updated: {new Date(dashboardClinic.lastUpdated).toLocaleString('en-IL')}
+                    {t.lastUpdated}: {new Date(dashboardClinic.lastUpdated).toLocaleString(lang === 'he' ? 'he-IL' : 'en-IL')}
                   </div>
                 </div>
               </div>
