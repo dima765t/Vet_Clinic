@@ -41,10 +41,17 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+
+    html {
+      height: -webkit-fill-available;
     }
 
     #root {
       min-height: 100vh;
+      min-height: -webkit-fill-available;
       display: flex;
       flex-direction: column;
     }
@@ -136,16 +143,6 @@
       background: var(--border);
     }
 
-    .btn-danger {
-      background: rgba(239, 68, 68, 0.15);
-      color: #EF4444;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    .btn-danger:active {
-      background: rgba(239, 68, 68, 0.25);
-    }
-
     /* Mobile menu button */
     .mobile-menu-btn {
       display: none;
@@ -177,6 +174,10 @@
       flex-direction: column;
       flex-shrink: 0;
       transition: transform 0.3s ease;
+    }
+
+    .sidebar.mobile-hidden {
+      transform: translateX(-100%);
     }
 
     .filters {
@@ -369,9 +370,7 @@
       font-size: 0.8rem;
       color: var(--text-secondary);
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.75rem;
+      gap: 1rem;
       flex-wrap: wrap;
     }
 
@@ -381,39 +380,22 @@
       gap: 0.35rem;
     }
 
-    .btn-manage {
-      padding: 0.35rem 0.7rem;
-      background: rgba(0, 180, 216, 0.1);
-      border: 1px solid rgba(0, 180, 216, 0.25);
-      border-radius: 8px;
-      color: var(--primary);
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    .btn-manage:hover {
-      background: rgba(0, 180, 216, 0.2);
-    }
-
-    .btn-manage:active {
-      transform: scale(0.95);
-    }
-
     /* Map Container */
     .map-container {
       flex: 1;
       position: relative;
       background: var(--bg-dark);
+      min-height: 0;
     }
 
     #map {
-      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       width: 100%;
+      height: 100%;
     }
 
     /* Modal Overlay */
@@ -533,10 +515,6 @@
       transition: all 0.3s ease;
       font-weight: 600;
       touch-action: manipulation;
-      background: none;
-      color: var(--text-secondary);
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.95rem;
     }
 
     .toggle-option:active {
@@ -607,7 +585,6 @@
       transition: all 0.3s ease;
       margin-top: 1rem;
       touch-action: manipulation;
-      font-family: 'Outfit', sans-serif;
     }
 
     .save-btn:active {
@@ -655,32 +632,6 @@
       background: var(--primary);
     }
 
-    /* Toast notification */
-    .toast {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: var(--bg-card);
-      border: 1px solid var(--success);
-      border-radius: 12px;
-      padding: 0.85rem 1.5rem;
-      color: var(--success);
-      font-weight: 600;
-      font-size: 0.9rem;
-      z-index: 3000;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-      opacity: 0;
-      transition: all 0.4s ease;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
-    .toast.visible {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-
     /* Mobile styles */
     @media (max-width: 768px) {
       .header {
@@ -706,7 +657,7 @@
         font-size: 0.75rem;
       }
 
-      .btn .btn-label {
+      .btn span {
         display: none;
       }
 
@@ -737,8 +688,8 @@
       }
 
       .map-container {
-        height: 100%;
-        min-height: 400px;
+        flex: 1;
+        min-height: 300px;
       }
 
       .modal {
@@ -812,10 +763,6 @@
     @media (min-width: 769px) {
       .sidebar-overlay {
         display: none !important;
-      }
-
-      .sidebar.mobile-hidden {
-        transform: none;
       }
     }
 
@@ -901,9 +848,9 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useCallback } = React;
+    const { useState, useEffect, useRef } = React;
 
-    // ─── Sample data ───────────────────────────────────────
+    // Sample data - Tel Aviv vet clinics
     const initialClinics = [
       {
         id: '1',
@@ -963,110 +910,61 @@
     ];
 
     const allServices = [
-      'Emergency Care', 'Surgery', 'Vaccination', 'Dental Care',
-      'X-Ray/Imaging', 'Laboratory Tests', 'Grooming', 'Pet Hotel'
+      'Emergency Care',
+      'Surgery',
+      'Vaccination',
+      'Dental Care',
+      'X-Ray/Imaging',
+      'Laboratory Tests',
+      'Grooming',
+      'Pet Hotel'
     ];
 
-    // ─── Helper: sanitize text for safe HTML insertion ─────
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.appendChild(document.createTextNode(str));
-      return div.innerHTML;
-    }
-
-    // ─── App Component ─────────────────────────────────────
     function App() {
-      // FIX #2: Safe localStorage read with try/catch
       const [clinics, setClinics] = useState(() => {
-        try {
-          const saved = localStorage.getItem('vetClinics');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            // Basic validation: must be a non-empty array with expected shape
-            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].coordinates) {
-              return parsed;
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to load saved clinics, using defaults:', e);
-        }
-        return initialClinics;
+        const saved = localStorage.getItem('vetClinics');
+        return saved ? JSON.parse(saved) : initialClinics;
       });
-
       const [selectedClinic, setSelectedClinic] = useState(null);
       const [showDashboard, setShowDashboard] = useState(false);
       const [dashboardClinic, setDashboardClinic] = useState(null);
       const [filterStatus, setFilterStatus] = useState('all');
       const [filterService, setFilterService] = useState('all');
       const [sidebarVisible, setSidebarVisible] = useState(false);
-      const [toastMessage, setToastMessage] = useState('');
-
-      // FIX #3: Track mobile state via resize listener instead of window.innerWidth in render
-      const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
-
       const mapRef = useRef(null);
       const mapInstanceRef = useRef(null);
       const markersRef = useRef([]);
 
-      // ─── Mobile resize tracker ──────────────────────────
+      // Save to localStorage
       useEffect(() => {
-        const handleResize = () => {
-          const mobile = window.innerWidth <= 768;
-          setIsMobile(mobile);
-          // Auto-close sidebar when switching to desktop
-          if (!mobile) setSidebarVisible(false);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-      }, []);
-
-      // ─── Persist to localStorage ────────────────────────
-      useEffect(() => {
-        try {
-          localStorage.setItem('vetClinics', JSON.stringify(clinics));
-        } catch (e) {
-          console.warn('Failed to save clinics:', e);
-        }
+        localStorage.setItem('vetClinics', JSON.stringify(clinics));
       }, [clinics]);
 
-      // ─── FIX #1a: Map initialization (runs once) ───────
+      // Initialize map
       useEffect(() => {
-        if (mapInstanceRef.current) return; // already initialized
+        if (!mapInstanceRef.current) {
+          const map = L.map('map').setView([32.0853, 34.7818], 13);
+          
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Â© OpenStreetMap contributors'
+          }).addTo(map);
 
-        const map = L.map('map').setView([32.0853, 34.7818], 13);
+          mapInstanceRef.current = map;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+          // Adjust map on window resize
+          const resizeObserver = new ResizeObserver(() => {
+            map.invalidateSize();
+          });
+          
+          const mapElement = document.getElementById('map');
+          if (mapElement) {
+            resizeObserver.observe(mapElement);
+          }
 
-        mapInstanceRef.current = map;
-
-        // Keep map sized correctly on layout changes
-        const resizeObserver = new ResizeObserver(() => {
-          map.invalidateSize();
-        });
-        const mapElement = document.getElementById('map');
-        if (mapElement) resizeObserver.observe(mapElement);
-
-        return () => resizeObserver.disconnect();
-      }, []);
-
-      // ─── Filter logic (memoized) ────────────────────────
-      const getFilteredClinics = useCallback(() => {
-        return clinics.filter(clinic => {
-          const statusMatch = filterStatus === 'all' ||
-            (filterStatus === 'open' && clinic.isOpen) ||
-            (filterStatus === 'closed' && !clinic.isOpen);
-          const serviceMatch = filterService === 'all' ||
-            clinic.services.includes(filterService);
-          return statusMatch && serviceMatch;
-        });
-      }, [clinics, filterStatus, filterService]);
-
-      // ─── FIX #1b: Marker updates (runs on data/filter changes) ──
-      useEffect(() => {
-        const map = mapInstanceRef.current;
-        if (!map) return;
+          // Force invalidateSize after layout settles (fixes mobile)
+          setTimeout(() => map.invalidateSize(), 100);
+          setTimeout(() => map.invalidateSize(), 500);
+        }
 
         // Clear existing markers
         markersRef.current.forEach(marker => marker.remove());
@@ -1089,144 +987,120 @@
                 align-items: center;
                 justify-content: center;
                 font-size: 16px;
-              ">&#x1f43e;</div>
+              ">
+                ðŸ¾
+              </div>
             `,
             iconSize: [32, 32],
             iconAnchor: [16, 16]
           });
 
-          // FIX #7: Sanitize clinic data before inserting into popup HTML
-          const safeName = escapeHtml(clinic.name);
-          const safeAddress = escapeHtml(clinic.address);
-
           const marker = L.marker([clinic.coordinates.lat, clinic.coordinates.lng], { icon })
-            .addTo(map)
+            .addTo(mapInstanceRef.current)
             .bindPopup(`
               <div style="min-width: 200px;">
-                <strong style="font-size: 1.1em;">${safeName}</strong><br/>
+                <strong style="font-size: 1.1em;">${clinic.name}</strong><br/>
                 <span style="color: ${clinic.isOpen ? '#06D6A0' : '#EF4444'};">
-                  ${clinic.isOpen ? '&#9679; Open' : '&#9679; Closed'}
+                  ${clinic.isOpen ? 'â— Open' : 'â— Closed'}
                 </span><br/>
-                <small>${safeAddress}</small>
+                <small>${clinic.address}</small>
               </div>
             `);
 
           marker.on('click', () => {
             setSelectedClinic(clinic.id);
-            if (isMobile) setSidebarVisible(true);
+            if (window.innerWidth <= 768) {
+              setSidebarVisible(true);
+            }
           });
 
           markersRef.current.push(marker);
         });
-      }, [getFilteredClinics, isMobile]);
+      }, [clinics, filterStatus, filterService]);
 
-      // ─── Handlers ───────────────────────────────────────
+      const getFilteredClinics = () => {
+        return clinics.filter(clinic => {
+          const statusMatch = filterStatus === 'all' || 
+            (filterStatus === 'open' && clinic.isOpen) ||
+            (filterStatus === 'closed' && !clinic.isOpen);
+          
+          const serviceMatch = filterService === 'all' || 
+            clinic.services.includes(filterService);
+          
+          return statusMatch && serviceMatch;
+        });
+      };
+
       const handleClinicClick = (clinic) => {
         setSelectedClinic(clinic.id);
         if (mapInstanceRef.current) {
           mapInstanceRef.current.setView([clinic.coordinates.lat, clinic.coordinates.lng], 15);
         }
-        if (isMobile) setSidebarVisible(false);
+        if (window.innerWidth <= 768) {
+          setSidebarVisible(false);
+        }
       };
 
-      // FIX #4: Open dashboard for a specific clinic
       const openDashboard = (clinic) => {
-        setDashboardClinic({ ...clinic });
+        setDashboardClinic({...clinic});
         setShowDashboard(true);
       };
 
       const handleDashboardSave = () => {
-        setClinics(prev => prev.map(c =>
-          c.id === dashboardClinic.id
-            ? { ...dashboardClinic, lastUpdated: new Date().toISOString() }
+        setClinics(prev => prev.map(c => 
+          c.id === dashboardClinic.id 
+            ? {...dashboardClinic, lastUpdated: new Date().toISOString()}
             : c
         ));
         setShowDashboard(false);
         setDashboardClinic(null);
-        showToast('Changes saved successfully!');
       };
 
-      // FIX #5: Reset to default data
-      const handleResetData = () => {
-        setClinics(initialClinics);
-        setSelectedClinic(null);
-        setFilterStatus('all');
-        setFilterService('all');
-        showToast('Data reset to defaults');
+      const toggleSidebar = () => {
+        setSidebarVisible(!sidebarVisible);
+        // Recalculate map size after sidebar animation
+        setTimeout(() => mapInstanceRef.current?.invalidateSize(), 350);
       };
-
-      const toggleSidebar = () => setSidebarVisible(prev => !prev);
-
-      const showToast = (msg) => {
-        setToastMessage(msg);
-        setTimeout(() => setToastMessage(''), 2500);
-      };
-
-      // Close modal on Escape key
-      useEffect(() => {
-        const handleKey = (e) => {
-          if (e.key === 'Escape' && showDashboard) setShowDashboard(false);
-        };
-        document.addEventListener('keydown', handleKey);
-        return () => document.removeEventListener('keydown', handleKey);
-      }, [showDashboard]);
 
       const filteredClinics = getFilteredClinics();
 
       return (
         <>
-          {/* ─── Header ─────────────────────────────────── */}
           <header className="header">
             <div className="logo">
-              <button
-                className="mobile-menu-btn"
-                onClick={toggleSidebar}
-                aria-label="Toggle clinic list"
-                aria-expanded={sidebarVisible}
-              >
-                &#9776;
+              <button className="mobile-menu-btn" onClick={toggleSidebar}>
+                â˜°
               </button>
-              <div className="logo-icon" aria-hidden="true">&#x1f43e;</div>
+              <div className="logo-icon">ðŸ¾</div>
               <div className="logo-text">Tel Aviv Vet Clinics</div>
             </div>
             <div className="header-actions">
-              <button className="btn btn-danger" onClick={handleResetData} title="Reset all data to defaults">
-                &#x21bb; <span className="btn-label">Reset</span>
-              </button>
-              <button className="btn btn-primary" onClick={() => {
-                if (clinics.length > 0) {
-                  const bounds = L.latLngBounds(clinics.map(c => [c.coordinates.lat, c.coordinates.lng]));
-                  mapInstanceRef.current?.fitBounds(bounds, { padding: [30, 30] });
+              <button className="btn btn-secondary" onClick={() => {
+                if (filteredClinics.length > 0) {
+                  openDashboard(filteredClinics[0]);
                 }
               }}>
-                &#x1f5fa;&#xfe0f; <span className="btn-label">View All</span>
+                ðŸ“Š <span>Dashboard</span>
+              </button>
+              <button className="btn btn-primary" onClick={() => {
+                const bounds = L.latLngBounds(clinics.map(c => [c.coordinates.lat, c.coordinates.lng]));
+                mapInstanceRef.current?.fitBounds(bounds);
+              }}>
+                ðŸ—ºï¸ <span>View All</span>
               </button>
             </div>
           </header>
 
-          {/* ─── Main Content ───────────────────────────── */}
           <div className="container">
-            {/* Mobile overlay */}
-            {sidebarVisible && isMobile && (
-              <div
-                className="sidebar-overlay visible"
-                onClick={() => setSidebarVisible(false)}
-                aria-hidden="true"
-              />
+            {sidebarVisible && window.innerWidth <= 768 && (
+              <div className="sidebar-overlay visible" onClick={() => setSidebarVisible(false)}></div>
             )}
 
-            {/* Sidebar */}
-            <aside
-              className={`sidebar ${!sidebarVisible && isMobile ? 'mobile-hidden' : ''}`}
-              role="complementary"
-              aria-label="Clinic list and filters"
-            >
+            <aside className={`sidebar ${!sidebarVisible && window.innerWidth <= 768 ? 'mobile-hidden' : ''}`}>
               <div className="filters">
-                {/* FIX #6: Proper htmlFor/id pairs for accessibility */}
                 <div className="filter-group">
-                  <label className="filter-label" htmlFor="filter-status">Filter by Status</label>
-                  <select
-                    id="filter-status"
+                  <label className="filter-label">Filter by Status</label>
+                  <select 
                     className="filter-select"
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
@@ -1237,9 +1111,8 @@
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label className="filter-label" htmlFor="filter-service">Filter by Service</label>
-                  <select
-                    id="filter-service"
+                  <label className="filter-label">Filter by Service</label>
+                  <select 
                     className="filter-select"
                     value={filterService}
                     onChange={(e) => setFilterService(e.target.value)}
@@ -1252,30 +1125,27 @@
                 </div>
               </div>
 
-              <div className="clinics-list" role="list">
+              <div className="clinics-list">
                 {filteredClinics.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                  <div style={{textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)'}}>
                     No clinics match your filters
                   </div>
                 ) : (
                   filteredClinics.map(clinic => (
-                    <div
+                    <div 
                       key={clinic.id}
                       className={`clinic-card ${selectedClinic === clinic.id ? 'selected' : ''}`}
                       onClick={() => handleClinicClick(clinic)}
-                      role="listitem"
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleClinicClick(clinic); }}
                     >
                       <div className="clinic-header">
                         <div className="clinic-info">
                           <h3 className="clinic-name">{clinic.name}</h3>
                           <div className="clinic-address">
-                            &#x1f4cd; {clinic.address}
+                            ðŸ“ {clinic.address}
                           </div>
                         </div>
                         <span className={`status-badge ${clinic.isOpen ? 'open' : 'closed'}`}>
-                          <span className="status-dot" aria-hidden="true"></span>
+                          <span className="status-dot"></span>
                           {clinic.isOpen ? 'Open' : 'Closed'}
                         </span>
                       </div>
@@ -1288,18 +1158,7 @@
                         )}
                       </div>
                       <div className="clinic-contact">
-                        <div className="contact-item">&#x1f4de; {clinic.phone}</div>
-                        {/* FIX #4: Per-clinic Manage button */}
-                        <button
-                          className="btn-manage"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openDashboard(clinic);
-                          }}
-                          aria-label={`Manage ${clinic.name}`}
-                        >
-                          &#x2699;&#xfe0f; Manage
-                        </button>
+                        <div className="contact-item">ðŸ“ž {clinic.phone}</div>
                       </div>
                     </div>
                   ))
@@ -1307,22 +1166,20 @@
               </div>
             </aside>
 
-            {/* Map */}
-            <main className="map-container" role="main">
+            <main className="map-container">
               <div id="map" ref={mapRef}></div>
             </main>
           </div>
 
-          {/* ─── Footer ─────────────────────────────────── */}
           <footer className="footer">
             <div className="footer-disclaimer">
-              <strong>&#x26a0;&#xfe0f; Experimental Platform Disclaimer:</strong> This website is an experimental demonstration project
-              for portfolio purposes. The information displayed, including clinic locations, contact details, and availability
-              status, is simulated data for demonstration only. This is not a production service. Please verify all
+              <strong>âš ï¸ Experimental Platform Disclaimer:</strong> This website is an experimental demonstration project 
+              for portfolio purposes. The information displayed, including clinic locations, contact details, and availability 
+              status, is simulated data for demonstration only. This is not a production service. Please verify all 
               veterinary clinic information through official channels before visiting.
             </div>
             <div className="footer-copyright">
-              &copy; {new Date().getFullYear()} <strong>Dima Levin</strong>. All rights reserved.
+              Â© {new Date().getFullYear()} <strong>Dima Levin</strong>. All rights reserved. 
               This project and all associated code, design, and content are protected by copyright law.
             </div>
             <div className="footer-links">
@@ -1338,80 +1195,60 @@
             </div>
           </footer>
 
-          {/* ─── Dashboard Modal ────────────────────────── */}
           {showDashboard && dashboardClinic && (
-            <div
-              className="modal-overlay"
-              onClick={() => setShowDashboard(false)}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="dashboard-title"
-            >
+            <div className="modal-overlay" onClick={() => setShowDashboard(false)}>
               <div className="modal" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                  <h2 className="modal-title" id="dashboard-title">Clinic Dashboard</h2>
-                  <button
-                    className="close-btn"
-                    onClick={() => setShowDashboard(false)}
-                    aria-label="Close dashboard"
-                  >
-                    &times;
-                  </button>
+                  <h2 className="modal-title">Clinic Dashboard</h2>
+                  <button className="close-btn" onClick={() => setShowDashboard(false)}>Ã—</button>
                 </div>
                 <div className="modal-body">
-                  <h3 style={{ marginBottom: '1.5rem', color: 'var(--primary)' }}>{dashboardClinic.name}</h3>
-
+                  <h3 style={{marginBottom: '1.5rem', color: 'var(--primary)'}}>{dashboardClinic.name}</h3>
+                  
                   <div className="form-group">
                     <label className="form-label">Current Status</label>
-                    <div className="status-toggle" role="radiogroup" aria-label="Clinic status">
-                      <button
+                    <div className="status-toggle">
+                      <div 
                         className={`toggle-option open ${dashboardClinic.isOpen ? 'active' : ''}`}
-                        onClick={() => setDashboardClinic({ ...dashboardClinic, isOpen: true })}
-                        role="radio"
-                        aria-checked={dashboardClinic.isOpen}
+                        onClick={() => setDashboardClinic({...dashboardClinic, isOpen: true})}
                       >
-                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>&#x2705;</div>
+                        <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>âœ…</div>
                         Open
-                      </button>
-                      <button
+                      </div>
+                      <div 
                         className={`toggle-option closed ${!dashboardClinic.isOpen ? 'active' : ''}`}
-                        onClick={() => setDashboardClinic({ ...dashboardClinic, isOpen: false })}
-                        role="radio"
-                        aria-checked={!dashboardClinic.isOpen}
+                        onClick={() => setDashboardClinic({...dashboardClinic, isOpen: false})}
                       >
-                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>&#x1f6ab;</div>
+                        <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>ðŸš«</div>
                         Closed
-                      </button>
+                      </div>
                     </div>
                   </div>
 
                   <div className="form-group">
                     <label className="form-label">Available Services</label>
                     <div className="services-grid">
-                      {allServices.map(service => {
-                        const serviceId = `svc-${service.replace(/[\s\/]/g, '-').toLowerCase()}`;
-                        return (
-                          <div key={service} className="service-checkbox">
-                            <input
-                              type="checkbox"
-                              id={serviceId}
-                              checked={dashboardClinic.services.includes(service)}
-                              onChange={(e) => {
-                                const newServices = e.target.checked
-                                  ? [...dashboardClinic.services, service]
-                                  : dashboardClinic.services.filter(s => s !== service);
-                                setDashboardClinic({ ...dashboardClinic, services: newServices });
-                              }}
-                            />
-                            <label htmlFor={serviceId}>{service}</label>
-                          </div>
-                        );
-                      })}
+                      {allServices.map(service => (
+                        <div key={service} className="service-checkbox">
+                          <input 
+                            type="checkbox"
+                            id={service}
+                            checked={dashboardClinic.services.includes(service)}
+                            onChange={(e) => {
+                              const newServices = e.target.checked
+                                ? [...dashboardClinic.services, service]
+                                : dashboardClinic.services.filter(s => s !== service);
+                              setDashboardClinic({...dashboardClinic, services: newServices});
+                            }}
+                          />
+                          <label htmlFor={service}>{service}</label>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
                   <button className="save-btn" onClick={handleDashboardSave}>
-                    &#x1f4be; Save Changes
+                    ðŸ’¾ Save Changes
                   </button>
 
                   <div className="last-updated">
@@ -1421,11 +1258,6 @@
               </div>
             </div>
           )}
-
-          {/* ─── Toast Notification ─────────────────────── */}
-          <div className={`toast ${toastMessage ? 'visible' : ''}`} role="status" aria-live="polite">
-            {toastMessage}
-          </div>
         </>
       );
     }
